@@ -1,0 +1,64 @@
+from google.colab import drive
+drive.mount('/content/drive')
+
+import numpy as np
+import cv2
+import matplotlib.pyplot as plt
+
+input_img = cv2.imread('/content/drive/MyDrive/Colab Notebooks/人工知能プロジェクト演習_前期/第五回/Sample_Hase_Images/HaseImage01.jpg')
+REinput_img = cv2.resize(input_img,(344,344))
+height,width,channel = input_img.shape
+output_img = np.zeros((height, width, channel), np.uint8)
+listK = []
+min_value = 255
+step =  8
+omega = 0.9
+
+kprime = np.zeros((height,width,channel),np.uint8)
+lprime = np.zeros((height,width,channel),np.uint8)
+output = np.zeros((height,width,channel),np.uint8)
+
+for y in range(0,height-1):
+  for x in range(0,width-1):
+    b = input_img[y,x,0]
+    g = input_img[y,x,1]
+    r = input_img[y,x,2]
+    kprime[y][x] = min(b,g,r)
+    listK.append(kprime[y][x][0])
+A = max(listK)
+
+min_list  = []
+
+for i in range(0,height,step):
+  for j in range(0,width,step):
+    min_value = 255
+    for k in range(i,i+step):
+      for l in range(j,j+step):
+        if kprime[k][l][0] < min_value:
+          min_value = kprime[k][l][0]
+    min_list.append(min_value)
+print(min_list)
+count = 0
+for i in range(0,height,step):
+  for j in range(0,width,step):
+    for k in range(i,i+step):
+      for l in range(j,j+step):
+        lprime[k][l] = min_list[count]
+    count += 1
+
+blur_img = cv2.GaussianBlur(lprime,(151,151),51)
+t = 0
+for y in range(height):
+  for x in range(width):
+    t = 1 - omega * blur_img[y][x][0] / A
+    output_pixel = (REinput_img[y][x] - (1 - t) * A) / t
+    for num in range(3):
+      if (output_pixel[num] > 255):
+        output_pixel[num] = 255
+      elif (output_pixel[num] < 0):
+        output_pixel[num] = 0
+    output[y][x] = output_pixel
+REoutput = cv2.resize(output,(width,height))
+cv2.imwrite('/content/drive/MyDrive/Colab Notebooks/人工知能プロジェクト演習_前期/第五回/Sample_Hase_Images/HaseImage01.jpg',REoutput)
+REoutput = cv2.cvtColor(output.cv2.COLOR_BGR2RGB)
+plt.imshow(REoutput)
